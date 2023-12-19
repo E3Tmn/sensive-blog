@@ -47,14 +47,9 @@ def index(request):
 
     most_popular_posts = []  # TODO. Как это посчитать?
 
-    posts = Post.objects.prefetch_related('author').annotate(num_likes=Count('likes')).order_by('-num_likes')
-    most_popular_posts.extend(posts[:5])
-    most_popular_posts_ids = [post.id for post in most_popular_posts]
-    posts_with_comments = Post.objects.filter(id__in=most_popular_posts_ids).annotate(num_comments=Count('comments'))
-    ids_and_comments = posts_with_comments.values_list('id', 'num_comments')
-    count_for_id = dict(ids_and_comments)
-    for post in most_popular_posts:
-        post.num_comments = count_for_id[post.id]
+    most_popular_posts = Post.objects.popular()\
+                                    .prefetch_related('author')\
+                                    .fetch_with_comments_count()[:5]                
 
     fresh_posts = Post.objects.prefetch_related('author').annotate(num_comments=Count('comments')).order_by('published_at')
     most_fresh_posts = list(fresh_posts)[-5:]
